@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:ar_flutter_plugin/models/ar_hittest_result.dart';
@@ -12,6 +13,7 @@ import '../models/quest.dart';
 import '../services/location_service.dart';
 import '../services/firestore_service.dart';
 import '../services/photo_service.dart';
+import '../services/storage_service.dart';
 
 /// AR View Screen displays a 3D model and handles proximity detection.
 ///
@@ -39,6 +41,7 @@ class _ARViewScreenState extends State<ARViewScreen> {
   final LocationService _locationService = LocationService();
   final FirestoreService _firestoreService = FirestoreService();
   final PhotoService _photoService = PhotoService();
+  final StorageService _storageService = StorageService();
 
   bool _isWithinProximity = false;
   double _distanceToQuest = 0;
@@ -93,22 +96,41 @@ class _ARViewScreenState extends State<ARViewScreen> {
     await _captureAndSavePhoto();
   }
 
-  /// Captures photo and saves it as Base64 to Firestore.
+  /// Captures photo, uploads it to Firebase Storage, and saves metadata in Firestore.
   Future<void> _captureAndSavePhoto() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Capture photo as Base64
-      final base64Image = await _photoService.capturePhotoAsBase64();
+      await _photoService.initializeCamera();
+      final photoFile = await _photoService.capturePhoto();
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        throw Exception('User must be signed in to save captures');
+      }
 
-      // Save to Firestore
-      final documentId =
-          await _firestoreService.saveCapturedTreasure(
-            questId: widget.quest.id,
-            base64Image: base64Image,
-          );
+      final uploadResult = await _storageService.uploadDiscoveryPhoto(
+        file: photoFile,
+        userId: currentUser.uid,
+        questId: widget.quest.id,
+      );
+
+      if (uploadResult == null) {
+        throw Exception('Photo upload failed');
+      }
+
+      final photoUrl = uploadResult['downloadUrl']!;
+      final storagePath = uploadResult['storagePath']!;
+
+      final documentId = await _firestoreService.saveCapturedTreasure(
+        questId: widget.quest.id,
+        photoUrl: photoUrl,
+        storagePath: storagePath,
+        latitude: _currentPosition?.latitude ?? widget.userPosition.latitude,
+        longitude: _currentPosition?.longitude ?? widget.userPosition.longitude,
+        rewardPoints: 50,
+      );
 
       if (documentId != null) {
         if (mounted) {

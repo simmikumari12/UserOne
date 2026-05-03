@@ -1,5 +1,5 @@
 /// Quest model representing a scavenger hunt quest.
-/// 
+///
 /// Each quest contains geolocation data, a 3D model URL, and metadata
 /// for the AR scavenger hunt experience.
 class Quest {
@@ -10,6 +10,11 @@ class Quest {
   final String modelUrl;
   final String description;
   final String? imageUrl;
+  final String difficulty;
+  final bool generated;
+  final String createdBy;
+  final DateTime createdAt;
+  final String? templateId;
 
   const Quest({
     required this.id,
@@ -19,6 +24,11 @@ class Quest {
     required this.modelUrl,
     required this.description,
     this.imageUrl,
+    this.difficulty = 'Easy',
+    this.generated = false,
+    this.createdBy = '',
+    required this.createdAt,
+    this.templateId,
   });
 
   /// Creates a Quest instance from Firestore document data.
@@ -31,6 +41,11 @@ class Quest {
       modelUrl: data['modelUrl'] ?? '',
       description: data['description'] ?? '',
       imageUrl: data['imageUrl'],
+      difficulty: data['difficulty'] ?? 'Easy',
+      generated: data['generated'] ?? false,
+      createdBy: data['createdBy'] ?? '',
+      createdAt: (data['createdAt'] as dynamic)?.toDate() ?? DateTime.now(),
+      templateId: data['templateId'],
     );
   }
 
@@ -43,25 +58,36 @@ class Quest {
       'modelUrl': modelUrl,
       'description': description,
       'imageUrl': imageUrl,
+      'difficulty': difficulty,
+      'generated': generated,
+      'createdBy': createdBy,
+      'createdAt': createdAt,
+      'templateId': templateId,
     };
   }
 }
 
 /// Captured treasure model for storing user photo submissions.
-/// 
-/// Uses Base64 encoding for image data to work within Spark Plan limitations.
+///
+/// Uses Firebase Storage for the captured photo and Firestore for metadata.
 class CapturedTreasure {
   final String id;
   final String userId;
   final String questId;
-  final String base64Image;
+  final String? photoUrl;
+  final String? storagePath;
+  final double? latitude;
+  final double? longitude;
   final DateTime timestamp;
 
   const CapturedTreasure({
     required this.id,
     required this.userId,
     required this.questId,
-    required this.base64Image,
+    this.photoUrl,
+    this.storagePath,
+    this.latitude,
+    this.longitude,
     required this.timestamp,
   });
 
@@ -71,7 +97,10 @@ class CapturedTreasure {
       id: docId,
       userId: data['userId'] ?? '',
       questId: data['questId'] ?? '',
-      base64Image: data['base64Image'] ?? '',
+      photoUrl: data['photoUrl'],
+      storagePath: data['storagePath'],
+      latitude: (data['latitude'] as num?)?.toDouble(),
+      longitude: (data['longitude'] as num?)?.toDouble(),
       timestamp: (data['timestamp'] as dynamic)?.toDate() ?? DateTime.now(),
     );
   }
@@ -81,7 +110,10 @@ class CapturedTreasure {
     return {
       'userId': userId,
       'questId': questId,
-      'base64Image': base64Image,
+      'photoUrl': photoUrl,
+      'storagePath': storagePath,
+      'latitude': latitude,
+      'longitude': longitude,
       'timestamp': timestamp,
     };
   }

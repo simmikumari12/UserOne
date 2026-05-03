@@ -1,9 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/quest.dart';
 import '../services/firestore_service.dart';
 import '../services/location_service.dart';
+import '../services/messaging_service.dart';
 import 'ar_view_screen.dart';
 
 /// Map Screen displays a Google Map with quest markers.
@@ -19,12 +21,12 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
-  late GoogleMapController _mapController;
+  GoogleMapController? _mapController;
   final FirestoreService _firestoreService = FirestoreService();
   final LocationService _locationService = LocationService();
+  final MessagingService _messagingService = MessagingService();
 
   Position? _userPosition;
-  Set<Marker> _markers = {};
   bool _isLoadingLocation = true;
   String? _locationError;
 
@@ -32,6 +34,32 @@ class _MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
     _initializeLocation();
+    _initializeMessaging();
+  }
+
+  Future<void> _initializeMessaging() async {
+    final permissionGranted = await _messagingService.requestPermission();
+    if (!permissionGranted) {
+      return;
+    }
+
+    final token = await _messagingService.getDeviceToken();
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (token != null && currentUser != null) {
+      await _firestoreService.saveUserDeviceToken(currentUser.uid, token);
+    }
+
+    _messagingService.configureForegroundMessageHandling(
+      onMessage: (message) {
+        if (message.notification != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message.notification?.title ?? 'New notification'),
+            ),
+          );
+        }
+      },
+    );
   }
 
   /// Initializes user location and requests permission if needed.
@@ -55,13 +83,6 @@ class _MapScreenState extends State<MapScreen> {
         _isLoadingLocation = false;
       });
 
-      // Animate map to user location
-      _mapController.animateCamera(
-        CameraUpdate.newLatLng(
-          LatLng(position.latitude, position.longitude),
-        ),
-      );
-
       // Start listening to location updates
       _locationService.getPositionStream().listen((position) {
         setState(() {
@@ -77,28 +98,20 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   /// Builds markers from quest data.
-  void _updateMarkersFromQuests(List<Quest> quests) {
-    final newMarkers = <Marker>{};
-
-    for (final quest in quests) {
-      newMarkers.add(
-        Marker(
-          markerId: MarkerId(quest.id),
-          position: LatLng(quest.lat, quest.lng),
+  Set<Marker> _buildMarkersFromQuests(List<Quest> quests) {
+    return quests.map((quest) {
+      return Marker(
+        markerId: MarkerId(quest.id),
+        position: LatLng(quest.lat, quest.lng),
+        title: quest.name,
+        infoWindow: InfoWindow(
           title: quest.name,
-          infoWindow: InfoWindow(
-            title: quest.name,
-            snippet: quest.description,
-            onTap: () => _onMarkerTap(quest),
-          ),
+          snippet: quest.description,
           onTap: () => _onMarkerTap(quest),
         ),
+        onTap: () => _onMarkerTap(quest),
       );
-    }
-
-    setState(() {
-      _markers = newMarkers;
-    });
+    }).toSet();
   }
 
   /// Handles marker tap - navigates to AR view for the quest.
@@ -166,11 +179,21 @@ class _MapScreenState extends State<MapScreen> {
                         }
 
                         final quests = snapshot.data ?? [];
-                        _updateMarkersFromQuests(quests);
+                        final markers = _buildMarkersFromQuests(quests);
 
                         return GoogleMap(
                           onMapCreated: (controller) {
                             _mapController = controller;
+                            if (_userPosition != null) {
+                              _mapController!.animateCamera(
+                                CameraUpdate.newLatLng(
+                                  LatLng(
+                                    _userPosition!.latitude,
+                                    _userPosition!.longitude,
+                                  ),
+                                ),
+                              );
+                            }
                           },
                           initialCameraPosition: CameraPosition(
                             target: LatLng(
@@ -179,7 +202,7 @@ class _MapScreenState extends State<MapScreen> {
                             ),
                             zoom: 15,
                           ),
-                          markers: _markers,
+                          markers: markers,
                           myLocationEnabled: true,
                           myLocationButtonEnabled: true,
                           zoomControlsEnabled: true,
@@ -194,7 +217,7 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
-    _mapController.dispose();
+    _mapController?.dispose();
     super.dispose();
   }
 }
