@@ -1,17 +1,30 @@
-# arquest
+# ARQuest - Scavenger Hunt AR 🚀
 
-A new Flutter project.
+**ARQuest** is an augmented reality scavenger hunt app built with Flutter and Firebase. This project was developed as part of the Mobile App Development (Project 2) requirements at GSU.
 
-## Getting Started
+## 📍 Project Objectives
+- **Real-time Scavenger Hunt:** Discover treasures based on GPS location.
+- **Augmented Reality:** View 3D treasures (GLB models) in the real world.
+- **Spark Plan Integration:** Uses Firestore for image storage (Base64) to remain within free tier limits.
 
-This project is a starting point for a Flutter application.
+## 🛠️ Technical Architecture
+- **Framework:** Flutter (Android/iOS)
+- **Backend:** Firebase (Auth, Firestore)
+- **AR Engine:** `ar_flutter_plugin` (v0.7.3)
+- **Maps:** `Maps_flutter`
+- **Location:** `geolocator` for 20m proximity detection.
 
-A few resources to get you started if this is your first Flutter project:
+## 🚀 Recent Milestones (May 3rd Final Sprint)
+- ✅ **Firebase Setup:** Successfully configured `firebase_options.dart` and registered Android/iOS apps.
+- ✅ **Dynamic Assets:** Implemented Remote URL loading for 3D models via Firestore `modelUrl`.
+- ✅ **Real-world Testing:** Calibrated GPS coordinates for **Queen Tea GSU** (33.7538, -84.3871).
+- ✅ **Spark Plan Compliance:** Developed Base64 encoding for photo capture to bypass paid storage needs.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## 📂 Installation
+1. Clone the repo: `git clone https://github.com/simmikumari12/UserOne.git`
+2. Install dependencies: `flutter pub get`
+3. Add your `google-services.json` to `android/app/`.
+4. Run: `flutter run` (Note: AR requires a physical device with SDK 24+).
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 👥 Team & Contributions
+- **Simmi Kumari:** Lead Developer - Firebase Integration, AR Configuration, and UI Design.
