@@ -14,7 +14,7 @@ class QuestGeneratorService {
       'templateId': 'forest_rune',
       'name': 'Forest Rune',
       'description': 'Locate the hidden rune among ancient trees.',
-      'modelUrl': '',
+      'modelUrl': 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb',
       'difficulty': 'Easy',
       'latOffset': 0.0003,
       'lngOffset': 0.0002,
@@ -23,7 +23,7 @@ class QuestGeneratorService {
       'templateId': 'street_art',
       'name': 'Street Art Hunt',
       'description': 'Find the urban treasure hidden near local art.',
-      'modelUrl': '',
+      'modelUrl': 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb',
       'difficulty': 'Medium',
       'latOffset': -0.00025,
       'lngOffset': 0.00015,
@@ -32,7 +32,7 @@ class QuestGeneratorService {
       'templateId': 'river_beacon',
       'name': 'River Beacon',
       'description': 'Seek the glowing beacon by the water.',
-      'modelUrl': '',
+      'modelUrl': 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb',
       'difficulty': 'Hard',
       'latOffset': 0.0004,
       'lngOffset': -0.0003,
@@ -57,11 +57,10 @@ class QuestGeneratorService {
   }
 
   /// Generates a new quest near the player's current location.
-  Future<Quest?> generateQuestForUser({
-    required UserProfile profile,
+  Future<Quest?> generateQuest({
     required Position userPosition,
+    required String difficulty,
   }) async {
-    final difficulty = recommendDifficulty(profile);
     final template = _templates.firstWhere(
       (entry) => entry['difficulty'] == difficulty,
       orElse: () => _templates.first,
@@ -79,11 +78,11 @@ class QuestGeneratorService {
       description: template['description'] as String,
       difficulty: difficulty,
       templateId: template['templateId'] as String,
-      createdBy: profile.uid,
+      createdBy: 'generated',
       createdAt: DateTime.now(),
       generated: true,
     );
 
-    return await _firestoreService.createQuest(generatedQuest);
+    return generatedQuest;
   }
 }

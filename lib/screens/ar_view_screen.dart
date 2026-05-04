@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:vector_math/vector_math_64.dart';
 import 'package:ar_flutter_plugin/models/ar_hittest_result.dart';
 import 'package:ar_flutter_plugin/managers/ar_location_manager.dart';
 import 'package:ar_flutter_plugin/managers/ar_session_manager.dart';
@@ -55,11 +56,53 @@ class _ARViewScreenState extends State<ARViewScreen> {
     _startLocationTracking();
   }
 
-  /// Initializes the AR session.
-  void _initializeAR() {
-    arSessionManager = ARSessionManager();
-    arObjectManager = ARObjectManager();
-    arAnchorManager = ARAnchorManager();
+  /// Initializes the AR session and loads the 3D model.
+  void _initializeAR() async {
+    // Managers will be set in _onARViewCreated
+  }
+
+  void _onARViewCreated(
+    ARSessionManager arSessionManager,
+    ARObjectManager arObjectManager,
+    ARAnchorManager arAnchorManager,
+    ARLocationManager arLocationManager,
+  ) {
+    this.arSessionManager = arSessionManager;
+    this.arObjectManager = arObjectManager;
+    this.arAnchorManager = arAnchorManager;
+
+    // Enable plane detection
+    this.arSessionManager?.onInitialize(
+      showFeaturePoints: false,
+      showPlanes: true,
+      showWorldOrigin: false,
+      handleTaps: false,
+    );
+
+    this.arObjectManager?.onInitialize();
+
+    // Load the AR model from the remote URL
+    _loadARModel();
+  }
+
+  void _loadARModel() async {
+    try {
+      final node = ARNode(
+        type: NodeType.webGLB,
+        uri: widget.quest.modelUrl,
+        scale: Vector3(0.2, 0.2, 0.2),
+        position: Vector3(0.0, 0.0, -1.0),
+        rotation: Vector4(1.0, 0.0, 0.0, 0.0),
+      );
+      await arObjectManager?.addNode(node);
+    } catch (e) {
+      print('Error loading AR model: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load AR model: $e')),
+        );
+      }
+    }
   }
 
   /// Starts tracking user location to detect proximity.
@@ -280,39 +323,9 @@ class _ARViewScreenState extends State<ARViewScreen> {
       ),
       body: Stack(
         children: [
-          // AR View or placeholder
-          Container(
-            color: Colors.black,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.view_in_ar,
-                    size: 64,
-                    color: Colors.white54,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    widget.quest.name,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Model: ${widget.quest.modelUrl}',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          // AR View
+          ARView(
+            onARViewCreated: _onARViewCreated,
           ),
           // Proximity Indicator
           Positioned(

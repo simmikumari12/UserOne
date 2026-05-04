@@ -4,9 +4,9 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/quest.dart';
 import '../services/firestore_service.dart';
-import '../services/location_service.dart';
-import '../services/messaging_service.dart';
-import 'ar_view_screen.dart';
+import '../screens/profile_screen.dart';
+import '../screens/leaderboard_screen.dart';
+import '../screens/quest_creation_screen.dart';
 
 /// Map Screen displays a Google Map with quest markers.
 ///
@@ -140,6 +140,58 @@ class _MapScreenState extends State<MapScreen> {
       appBar: AppBar(
         title: const Text('ARQuest Map'),
         elevation: 0,
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(
+                color: Colors.blue,
+              ),
+              child: Text(
+                'ARQuest Menu',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text('Profile'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.leaderboard),
+              title: const Text('Leaderboard'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LeaderboardScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.add),
+              title: const Text('Create Quest'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const QuestCreationScreen()),
+                );
+              },
+            ),
+          ],
+        ),
       ),
       body: _isLoadingLocation
           ? const Center(
